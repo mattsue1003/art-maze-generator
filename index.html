@@ -99,7 +99,7 @@ footer.site{padding:18px;text-align:center;font-size:12px;color:var(--muted);}
 
 <main>
 <aside id="aside">
-  <button class="ghost mobile-toggle" onclick="document.getElementById('aside').classList.toggle('collapsed')">⚙ 顯示／收起設定</button>
+  <button class="ghost mobile-toggle" onclick="document.getElementById('aside').classList.toggle('collapsed')">⚙ 設定：造型、難度、張數、文字（點我展開／收起）</button>
   <div class="panel">
 
   <div class="group">
@@ -379,8 +379,10 @@ function renderArt(maze,opt,isSolution){
     const outDist=(px,py,dir)=>{let d=0;while(d<cs*3&&insideShape(sh,(px-cx)/S,(py+dir*d-cy)/S))d+=0.3;return d+bw*0.6+0.4;};
     const eLen=outDist(ex,ey,-1),xLen=outDist(xx,xy,1);
     // 平滑外框填色 + 格子白底（夾在中間就是外框帶）
-    out+=`<path d="${sh.d}" ${tr} fill="${color}" stroke="${color}" stroke-width="${F(bw/S)}" stroke-linejoin="round"/>`;
+    // 外框內、格子外的縫隙：淡色底（不是路，也不會黑成一團）
+    out+=`<path d="${sh.d}" ${tr} fill="${color}" fill-opacity="0.13"/>`;
     out+=`<clipPath id="${uid}c"><path d="${sh.d}" ${tr}/></clipPath><g clip-path="url(#${uid}c)" fill="#fff">${rects}</g>`;
+    out+=`<path d="${sh.d}" ${tr} fill="none" stroke="${color}" stroke-width="${F(bw/S)}" stroke-linejoin="round"/>`;
     out+=`<rect x="${F(ex-cs/2+0.02)}" y="${F(ey-eLen)}" width="${F(cs-0.04)}" height="${F(eLen+0.3)}" fill="#fff"/><rect x="${F(xx-cs/2+0.02)}" y="${F(xy-0.3)}" width="${F(cs-0.04)}" height="${F(xLen+0.3)}" fill="#fff"/>`;
     const pts=maze.path.map(([r,c])=>[ox+(c+0.5)*cs,oy+(r+0.5)*cs]);
     pts.unshift([ex,ey-eLen+0.5]);pts.push([xx,xy+xLen-0.5]);
@@ -517,7 +519,7 @@ document.querySelectorAll('#diffSeg button').forEach(b=>b.onclick=()=>{state.dif
 document.querySelectorAll('#styleSeg button').forEach(b=>b.onclick=()=>{state.style=b.dataset.v;document.querySelectorAll('#styleSeg button').forEach(x=>x.classList.toggle('on',x===b));regen();});
 ['size','stroke','color','decor','bgdots','title','subtitle','nameLine','showLabel','footer','count','mixShapes','solMode'].forEach(id=>{$(id).addEventListener('input',()=>{$('sizeVal').textContent=$('size').value+' mm';$('strokeVal').textContent=['','極細','細','中','粗','極粗'][+$('stroke').value];regen();});});
 $('zoom').addEventListener('input',applyZoom);
-if(window.innerWidth<900){$('zoom').value=Math.min(60,Math.floor((window.innerWidth-50)/(210*3.7795)*100));}
+if(window.innerWidth<900){$('zoom').value=Math.min(60,Math.floor((window.innerWidth-50)/(210*3.7795)*100));$('aside').classList.add('collapsed');}
 regen();
 </script>
 </body>
