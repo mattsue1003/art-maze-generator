@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>藝術迷宮紙本生成器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js"></script>
 <style>
 :root{
   --orange:#E8552D; --amber:#F4A93C; --teal:#028090; --ink:#12343B;
@@ -493,7 +493,7 @@ async function downloadPDF(){const btn=$('pdfBtn');btn.disabled=true;btn.textCon
   btn.disabled=false;btn.textContent='下載 PDF';}
 
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail '+src));document.head.appendChild(s);});}
-async function ensurePptx(){if(window.PptxGenJS)return;for(const u of ['https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js']){try{await loadScript(u);if(window.PptxGenJS)return;}catch(e){}}throw new Error('PptxGenJS 無法載入');}
+async function ensurePptx(){if(window.PptxGenJS)return;for(const u of ['https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js','https://unpkg.com/pptxgenjs@4.0.1/dist/pptxgen.bundle.js']){try{await loadScript(u);if(window.PptxGenJS)return;}catch(e){}}throw new Error('PptxGenJS 無法載入');}
 async function downloadPPT(){const btn=$('pptBtn');btn.disabled=true;btn.textContent='產生中…';
   try{await ensurePptx();
     const c=cfg();const pptx=new PptxGenJS();pptx.defineLayout({name:'A4P',width:8.27,height:11.69});pptx.layout='A4P';
