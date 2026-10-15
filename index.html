@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>藝術迷宮紙本生成器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PptxGenJS/3.12.0/pptxgen.bundle.js"></script>
+<style>
+:root{
+  --orange:#E8552D; --amber:#F4A93C; --teal:#028090; --ink:#12343B;
+  --bg:#FFFCF7; --card:#FFFFFF; --line:#EFE6D8; --muted:#7A7068; --soft:#FFF4E6;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif;}
+header.top{display:flex;align-items:center;gap:14px;padding:14px 22px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;}
+header.top .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--orange),var(--amber));display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px;flex:none;}
+header.top h1{font-size:20px;margin:0;}
+header.top p{margin:2px 0 0;font-size:13px;color:var(--muted);}
+header.top .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700;transition:.15s;}
+button.primary{background:var(--orange);color:#fff;}
+button.primary:hover{background:#d04a26;}
+button.teal{background:var(--teal);color:#fff;}
+button.teal:hover{background:#026f7c;}
+button.ghost{background:var(--soft);color:var(--ink);border:1px solid #F3DFC2;}
+button.ghost:hover{background:#FFEBD1;}
+button:disabled{opacity:.5;cursor:wait;}
+main{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 77px);}
+aside{background:#fff;border-right:1px solid var(--line);padding:18px 18px 40px;overflow:auto;}
+section.preview{padding:22px;overflow:auto;}
+.group{margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed var(--line);}
+.group h3{margin:0 0 10px;font-size:14px;color:var(--teal);letter-spacing:.5px;display:flex;align-items:center;gap:6px;}
+.group h3 .n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;}
+label.row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;margin:8px 0;}
+label.row span.k{color:var(--ink);font-weight:600;}
+select,input[type=text],input[type=number]{font-family:inherit;font-size:14px;padding:7px 9px;border:1px solid #E2D7C5;border-radius:8px;background:#fff;color:var(--ink);min-width:0;}
+input[type=text]{width:100%;}
+input[type=range]{width:100%;accent-color:var(--orange);}
+.shape-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.shape-btn{border:2px solid var(--line);background:#fff;border-radius:10px;padding:6px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--ink);cursor:pointer;}
+.shape-btn svg{width:40px;height:40px;}
+.shape-btn.active{border-color:var(--orange);background:var(--soft);}
+.seg{display:flex;background:var(--soft);border-radius:10px;padding:3px;gap:3px;}
+.seg button{flex:1;background:transparent;color:var(--muted);padding:7px 4px;font-size:13px;border-radius:8px;}
+.seg button.on{background:#fff;color:var(--orange);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.hint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.5;}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;margin:8px 0;}
+.check input{accent-color:var(--orange);width:17px;height:17px;}
+.pages{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;}
+.page{width:210mm;height:297mm;background:#fff;box-shadow:0 6px 24px rgba(40,30,10,.12);transform-origin:top left;}
+.page svg{width:100%;height:100%;display:block;}
+.pagewrap{position:relative;}
+.pagewrap .tag{position:absolute;top:-10px;left:8px;background:var(--teal);color:#fff;font-size:12px;padding:3px 10px;border-radius:999px;z-index:2;}
+.pagewrap .tag.sol{background:var(--amber);color:var(--ink);}
+.scalebar{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;}
+.scalebar input{width:160px;}
+footer.site{padding:18px;text-align:center;font-size:12px;color:var(--muted);}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:50;}
+.toast.show{opacity:1;}
+.mobile-toggle{display:none;}
+@media (max-width:900px){
+  main{grid-template-columns:1fr;}
+  aside{border-right:none;border-bottom:1px solid var(--line);}
+  header.top h1{font-size:17px;}
+  header.top p{display:none;}
+  header.top .actions button{padding:8px 10px;font-size:13px;}
+  .mobile-toggle{display:block;width:100%;margin-bottom:6px;}
+  aside.collapsed .panel{display:none;}
+}
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  body{background:#fff;}
+  header.top,aside,.scalebar,footer.site,.toast,.pagewrap .tag{display:none !important;}
+  main{display:block;min-height:0;}
+  section.preview{padding:0;overflow:visible;}
+  .pages{display:block;}
+  .pagewrap{margin:0;width:auto !important;height:auto !important;}
+  .page{box-shadow:none;transform:none !important;margin:0;page-break-after:always;break-after:page;width:210mm;height:297mm;}
+  .pagewrap:last-child .page{page-break-after:auto;break-after:auto;}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">迷</div>
+  <div>
+    <h1>藝術迷宮紙本生成器</h1>
+    <p>迷宮本身就是一幅畫：走完可以上色、裝框、帶回家</p>
+  </div>
+  <div class="actions">
+    <button class="ghost" onclick="regen(true)">🔀 換一組</button>
+    <button class="teal" id="pptBtn" onclick="downloadPPT()">下載 PPT</button>
+    <button class="teal" id="pdfBtn" onclick="downloadPDF()">下載 PDF</button>
+    <button class="ghost" onclick="downloadSVG()">SVG</button>
+    <button class="primary" onclick="window.print()">列印</button>
+  </div>
+</header>
+
+<main>
+<aside id="aside">
+  <button class="ghost mobile-toggle" onclick="document.getElementById('aside').classList.toggle('collapsed')">⚙ 顯示／收起設定</button>
+  <div class="panel">
+
+  <div class="group">
+    <h3><span class="n">1</span>迷宮造型</h3>
+    <div class="shape-grid" id="shapeGrid"></div>
+    <p class="hint">太陽與蝸牛是圓形迷宮（由中心走到外圈）；其他造型以圖案的「身體」當迷宮，頭、腳、觸鬚與背景小圖是線稿，可以一起上色。</p>
+  </div>
+
+  <div class="group">
+    <h3><span class="n">2</span>難度與大小</h3>
+    <div class="seg" id="diffSeg">
+      <button data-v="1">簡單</button><button data-v="2" class="on">中等</button><button data-v="3">困難</button><button data-v="4">挑戰</button>
+    </div>
+    <p class="hint">簡單＝格子大、路寬好走（適合長輩與幼兒）；挑戰＝格子細密、彎路多。</p>
+    <label class="row"><span class="k">圖案大小</span><span id="sizeVal">175 mm</span></label>
+    <input type="range" id="size" min="120" max="190" value="175">
+  </div>
+
+  <div class="group">
+    <h3><span class="n">3</span>線條風格</h3>
+    <div class="seg" id="styleSeg">
+      <button data-v="clean" class="on">俐落</button><button data-v="round">圓潤</button><button data-v="hand">手繪</button><button data-v="double">雙線</button>
+    </div>
+    <label class="row"><span class="k">線條粗細</span><span id="strokeVal">中</span></label>
+    <input type="range" id="stroke" min="1" max="5" value="3">
+    <label class="row"><span class="k">線條顏色</span>
+      <select id="color">
+        <option value="#1f2a2e">墨黑（適合上色）</option>
+        <option value="#028090">青藍</option>
+        <option value="#E8552D">橘紅</option>
+        <option value="#6b4f2a">咖啡</option>
+        <option value="#9a9a9a">淺灰（描線用）</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" id="decor" checked>顯示特徵與背景小圖（線稿）</label>
+    <label class="check"><input type="checkbox" id="bgdots">背景加淡色圓點（裝飾）</label>
+  </div>
+
+  <div class="group">
+    <h3><span class="n">4</span>頁面文字</h3>
+    <label class="row"><span class="k">標題</span></label>
+    <input type="text" id="title" value="藝術迷宮" maxlength="20">
+    <label class="row"><span class="k">說明文字</span></label>
+    <input type="text" id="subtitle" value="從「入口」走到「出口」，走完可以把圖案塗上顏色。" maxlength="60">
+    <label class="check"><input type="checkbox" id="nameLine" checked>顯示 姓名／日期 欄</label>
+    <label class="check"><input type="checkbox" id="showLabel" checked>標示「入口」「出口」</label>
+    <label class="row"><span class="k">落款（頁尾）</span></label>
+    <input type="text" id="footer" value="愛迪樂健康促進團隊" maxlength="40">
+  </div>
+
+  <div class="group">
+    <h3><span class="n">5</span>張數與解答</h3>
+    <label class="row"><span class="k">產生張數</span>
+      <input type="number" id="count" min="1" max="20" value="1" style="width:80px"></label>
+    <label class="check"><input type="checkbox" id="mixShapes">每張換不同造型</label>
+    <label class="row"><span class="k">解答頁</span>
+      <select id="solMode">
+        <option value="none">不印</option>
+        <option value="after">每張後面附解答</option>
+        <option value="end">集中放最後</option>
+      </select>
+    </label>
+    <p class="hint">解答以橘色虛線標出路徑；列印時建議雙面列印，解答就在背面。</p>
+  </div>
+
+  <div class="group">
+    <h3><span class="n">6</span>輸出說明</h3>
+    <p class="hint">「列印」直接出 A4；「下載 PDF」可存檔分享；「下載 PPT」的標題、說明、姓名欄、落款都是可編輯文字方塊，迷宮是一張圖，可自由移動排版；「SVG」可用 Canva、Illustrator 開啟修改線條。</p>
+  </div>
+  </div>
+</aside>
+
+<section class="preview">
+  <div class="scalebar">
+    <span>預覽縮放</span><input type="range" id="zoom" min="25" max="100" value="60">
+    <span id="zoomVal">60%</span>
+    <span style="margin-left:auto" id="pageInfo"></span>
+  </div>
+  <div class="pages" id="pages"></div>
+</section>
+</main>
+<footer class="site">藝術迷宮紙本生成器 · 自由列印使用於社區、教室、居家活動</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- 工具 ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function hash2(x,y,s){let h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h);}
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+const F=n=>(+n).toFixed(3);
+
+/* ---------- 幾何：所有造型皆為「點環」(y 向下，單位 -1..1) ---------- */
+function ensureCW(p){let a=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1];}return a<0?p.slice().reverse():p;}
+function ell(cx,cy,rx,ry,rot=0,n=72){const o=[];const c=Math.cos(rot),s=Math.sin(rot);for(let i=0;i<n;i++){const t=i/n*Math.PI*2;const x=rx*Math.cos(t),y=ry*Math.sin(t);o.push([cx+x*c-y*s,cy+x*s+y*c]);}return ensureCW(o);}
+const circ=(cx,cy,r,n=72)=>ell(cx,cy,r,r,0,n);
+function rounded(pts,t=0.3,steps=10){const n=pts.length;const o=[];for(let i=0;i<n;i++){const P=pts[(i-1+n)%n],V=pts[i],N=pts[(i+1)%n];const a=[V[0]+(P[0]-V[0])*t,V[1]+(P[1]-V[1])*t],b=[V[0]+(N[0]-V[0])*t,V[1]+(N[1]-V[1])*t];for(let k=0;k<=steps;k++){const u=k/steps;const x=(1-u)*(1-u)*a[0]+2*(1-u)*u*V[0]+u*u*b[0],y=(1-u)*(1-u)*a[1]+2*(1-u)*u*V[1]+u*u*b[1];o.push([x,y]);}}return ensureCW(o);}
+function heart(cx,cy,s,rot=0,n=90){const o=[];const c=Math.cos(rot),si=Math.sin(rot);for(let i=0;i<n;i++){const t=i/n*Math.PI*2;let x=16*Math.pow(Math.sin(t),3),y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));x/=17;y/=17;y-=0.05;x*=s;y*=s;o.push([cx+x*c-y*si,cy+x*si+y*c]);}return ensureCW(o);}
+function star(cx,cy,ro,ri,k=5,rot=-Math.PI/2){const p=[];for(let i=0;i<k*2;i++){const t=rot+i*Math.PI/k;const r=i%2?ri:ro;p.push([cx+r*Math.cos(t),cy+r*Math.sin(t)]);}return p;}
+const ringsPath=rings=>rings.map(r=>'M'+r.map(p=>F(p[0])+' '+F(p[1])).join('L')+'Z').join('');
+const polyStr=pts=>pts.map(p=>F(p[0])+','+F(p[1])).join(' ');
+
+/* ---------- 裝飾小圖（線稿，單位座標；stroke 以 class 控制） ---------- */
+const D={
+  path:(d,fill='#fff')=>`<path d="${d}" fill="${fill}" class="dk"/>`,
+  line:(x1,y1,x2,y2)=>`<line x1="${F(x1)}" y1="${F(y1)}" x2="${F(x2)}" y2="${F(y2)}" class="dk"/>`,
+  circle:(cx,cy,r,fill='#fff')=>`<circle cx="${F(cx)}" cy="${F(cy)}" r="${F(r)}" fill="${fill}" class="dk"/>`,
+  dot:(cx,cy,r)=>`<circle cx="${F(cx)}" cy="${F(cy)}" r="${F(r)}" class="dkfill"/>`,
+  poly:(pts,fill='#fff')=>`<polygon points="${polyStr(pts)}" fill="${fill}" class="dk"/>`,
+  ring:(pts,fill='#fff')=>`<path d="${ringsPath([pts])}" fill="${fill}" class="dk"/>`,
+  smallHeart:(x,y,s)=>D.ring(heart(x,y,s)),
+  smallStar:(x,y,r)=>D.ring(rounded(star(x,y,r,r*0.45),0.25,4)),
+  sparkle:(x,y,r)=>D.line(x-r,y,x+r,y)+D.line(x,y-r,x,y+r),
+  flower:(x,y,r)=>{let s='';for(let i=0;i<5;i++){const t=i/5*Math.PI*2;s+=D.circle(x+Math.cos(t)*r*1.1,y+Math.sin(t)*r*1.1,r*0.62);}return s+D.circle(x,y,r*0.55);},
+  carrot:(x,y,s)=>D.ring(rounded([[x-0.32*s,y-0.5*s],[x+0.32*s,y-0.5*s],[x,y+0.5*s]],0.3,6))+D.line(x,y-0.5*s,x,y-0.9*s)+D.line(x,y-0.55*s,x-0.25*s,y-0.85*s)+D.line(x,y-0.55*s,x+0.25*s,y-0.85*s),
+  leaf:(x,y,rx,ry,rot)=>D.ring(ell(x,y,rx,ry,rot,40))+D.line(x-rx*0.7*Math.cos(rot),y-rx*0.7*Math.sin(rot),x+rx*0.7*Math.cos(rot),y+rx*0.7*Math.sin(rot)),
+  face:(x,y,r)=>D.dot(x-r*0.38,y-r*0.1,r*0.09)+D.dot(x+r*0.38,y-r*0.1,r*0.09)+D.poly([[x-r*0.1,y+r*0.2],[x+r*0.1,y+r*0.2],[x,y+r*0.34]],'none')+`<path d="M${F(x-r*0.25)} ${F(y+r*0.5)}Q${F(x)} ${F(y+r*0.7)} ${F(x+r*0.25)} ${F(y+r*0.5)}" fill="none" class="dk"/>`,
+  whiskers:(x,y,r)=>{let s='';for(const d of [-1,1])for(const k of [-0.1,0.08,0.26])s+=D.line(x+d*r*0.45,y+r*0.35+k*r,x+d*r*1.2,y+r*0.25+k*r*1.6);return s;},
+  sun:(x,y,r)=>{let s=D.circle(x,y,r);for(let i=0;i<8;i++){const t=i/8*Math.PI*2;s+=D.line(x+Math.cos(t)*r*1.35,y+Math.sin(t)*r*1.35,x+Math.cos(t)*r*1.9,y+Math.sin(t)*r*1.9);}return s;},
+  grass:(x1,x2,y)=>{let s=D.line(x1,y,x2,y);for(let x=x1+0.08;x<x2;x+=0.13)s+=D.line(x,y,x+0.04,y-0.08)+D.line(x+0.08,y,x+0.05,y-0.07);return s;},
+};
+
+/* ---------- 16 種造型 ---------- */
+/* maze: 點環陣列（迷宮區域，聯集）；under: 迷宮底下的線稿；over: 迷宮上方的線稿 */
+const SHAPES=[
+ {id:'sun',name:'太陽',type:'theta',cx:0,cy:0,r:0.74,
+  over:()=>{let s='';for(let i=0;i<14;i++){const t=i/14*Math.PI*2,c=Math.cos(t),si=Math.sin(t),c2=Math.cos(t+0.11),s2=Math.sin(t+0.11),c3=Math.cos(t-0.11),s3=Math.sin(t-0.11);s+=D.poly([[0.79*c3,0.79*s3],[0.99*c,0.99*si],[0.79*c2,0.79*s2]]);}return s;}},
+ {id:'snail',name:'蝸牛',type:'theta',cx:0.18,cy:-0.22,r:0.6,
+  under:()=>D.ring(rounded([[-0.45,0.28],[-0.88,0.22],[-1,0.5],[-0.88,0.78],[0.3,0.82],[0.85,0.8],[0.95,0.6],[0.78,0.42],[0.4,0.42]],0.35,8))+D.line(-0.78,0.25,-0.9,-0.12)+D.line(-0.6,0.24,-0.62,-0.12)+D.circle(-0.92,-0.17,0.06)+D.circle(-0.62,-0.18,0.06)+D.dot(-0.9,-0.17,0.02)+D.dot(-0.6,-0.18,0.02)+`<path d="M-0.86 0.55Q-0.8 0.62 -0.72 0.56" fill="none" class="dk"/>`},
+ {id:'heart',name:'愛心',maze:()=>[heart(0,0.02,0.84)],
+  over:()=>D.smallHeart(-0.86,-0.78,0.13)+D.smallHeart(0.86,-0.72,0.16)+D.smallHeart(0.84,0.72,0.1)+D.smallHeart(-0.84,0.68,0.11)+D.sparkle(-0.62,-0.92,0.05)+D.sparkle(0.6,-0.95,0.04)+D.sparkle(0.95,0.1,0.05)+D.sparkle(-0.95,0.05,0.04)},
+ {id:'star',name:'星星',maze:()=>[rounded(star(0,0.06,0.9,0.45),0.22,8)],
+  over:()=>D.smallStar(-0.86,-0.82,0.12)+D.smallStar(0.86,-0.8,0.1)+D.smallStar(0.9,0.85,0.09)+D.smallStar(-0.88,0.86,0.11)+D.sparkle(-0.55,-0.9,0.05)+D.sparkle(0.55,-0.93,0.04)+D.sparkle(0,0.95,0.05)},
+ {id:'flower',name:'花朵',maze:()=>{const r=[];for(let i=0;i<6;i++){const t=i/6*Math.PI*2-Math.PI/2;r.push(circ(0.42*Math.cos(t),-0.2+0.42*Math.sin(t),0.31));}r.push(circ(0,-0.2,0.36));return r;},
+  under:()=>D.line(0,0.45,0,1.0)+D.leaf(-0.2,0.78,0.22,0.1,-0.5)+D.leaf(0.22,0.9,0.22,0.1,0.5),
+  over:()=>D.circle(-0.92,0.85,0.05)+D.circle(0.92,0.9,0.04)+D.sparkle(-0.9,-0.9,0.05)+D.sparkle(0.9,-0.9,0.05)},
+ {id:'clover',name:'幸運草',maze:()=>[heart(0,-0.44,0.5,0),heart(0.44,0,0.5,Math.PI/2),heart(0,0.44,0.5,Math.PI),heart(-0.44,0,0.5,-Math.PI/2)],
+  under:()=>`<path d="M0.08 0.55Q0.1 0.9 0.4 1.0" fill="none" class="dk"/>`,
+  over:()=>D.circle(-0.9,0.9,0.05)+D.circle(0.92,-0.88,0.04)+D.sparkle(-0.9,-0.9,0.05)+D.sparkle(0.9,0.88,0.05)},
+ {id:'butterfly',name:'蝴蝶',maze:()=>[ell(-0.47,-0.3,0.42,0.47),ell(0.47,-0.3,0.42,0.47),ell(-0.4,0.44,0.35,0.37),ell(0.4,0.44,0.35,0.37),ell(0,0.08,0.16,0.62)],
+  over:()=>D.circle(0,-0.62,0.11)+`<path d="M-0.04 -0.68Q-0.15 -0.92 -0.34 -0.95" fill="none" class="dk"/><path d="M0.04 -0.68Q0.15 -0.92 0.34 -0.95" fill="none" class="dk"/>`+D.dot(-0.36,-0.96,0.03)+D.dot(0.36,-0.96,0.03)+D.flower(-0.88,-0.84,0.09)+D.flower(0.88,-0.84,0.09)+D.flower(-0.9,0.88,0.07)+D.flower(0.9,0.88,0.07)},
+ {id:'fish',name:'小魚',maze:()=>[ell(-0.2,0.05,0.6,0.4),rounded([[0.28,0.05],[0.95,-0.45],[0.95,0.55]],0.3,8)],
+  under:()=>`<path d="M-0.5 -0.3Q-0.3 -0.75 0.02 -0.32" class="dk" fill="#fff"/><path d="M-0.45 0.4Q-0.3 0.75 -0.05 0.42" class="dk" fill="#fff"/>`,
+  over:()=>D.circle(-0.9,-0.55,0.07)+D.circle(-0.8,-0.8,0.05)+D.circle(-0.95,-0.3,0.04)+`<path d="M0.75 0.98Q0.8 0.8 0.7 0.65Q0.78 0.5 0.72 0.4" fill="none" class="dk"/><path d="M0.9 0.98Q0.95 0.78 0.85 0.62" fill="none" class="dk"/>`+D.grass(-1,-0.45,0.98)},
+ {id:'apple',name:'蘋果',maze:()=>[circ(-0.3,0.14,0.58),circ(0.3,0.14,0.58),rounded([[-0.6,0.05],[0.6,0.05],[0.4,0.74],[-0.4,0.74]],0.3,8)],
+  under:()=>D.line(0,-0.4,0.06,-0.82)+D.leaf(0.32,-0.66,0.26,0.11,-0.45),
+  over:()=>D.sparkle(-0.9,-0.85,0.05)+D.sparkle(0.9,-0.9,0.04)+D.circle(-0.88,0.85,0.05)+D.circle(0.9,0.8,0.04)},
+ {id:'leaf',name:'葉子',maze:()=>{const a=[],b=[];for(let i=0;i<=60;i++){const t=i/60;const w=0.46*Math.sin(Math.PI*t)*(1-0.15*t);const u=-0.78+1.56*t;a.push([u,-w]);b.push([u,w]);}const pts=a.concat(b.reverse());const c=Math.SQRT1_2;return [ensureCW(pts.map(([x,y])=>[x*c-y*c,x*c+y*c]))];},
+  under:()=>D.line(-0.55,0.55,-0.9,0.9),
+  over:()=>D.circle(-0.8,-0.75,0.06)+D.circle(-0.6,-0.9,0.04)+D.circle(0.85,0.7,0.05)+D.circle(0.9,0.9,0.03)+D.leaf(0.8,-0.8,0.14,0.07,0.6)+D.leaf(-0.9,0.25,0.12,0.06,-0.8)},
+ {id:'cat',name:'貓咪',maze:()=>[ell(0.08,0.42,0.68,0.55)],
+  under:()=>`<path d="M0.74 0.25Q1.05 0.0 0.88 -0.4Q0.82 -0.55 0.95 -0.6" fill="none" class="dk"/>`+D.ring(ell(-0.2,0.98,0.12,0.06))+D.ring(ell(0.32,0.98,0.12,0.06))+D.poly(rounded([[-0.72,-0.26],[-0.7,-0.96],[-0.38,-0.62]],0.25,4))+D.poly(rounded([[-0.08,-0.26],[-0.12,-0.96],[-0.44,-0.62]],0.25,4))+D.circle(-0.4,-0.29,0.34)+D.face(-0.4,-0.31,0.34)+D.whiskers(-0.4,-0.35,0.33)},
+ {id:'rabbit',name:'兔子',maze:()=>[ell(0.18,0.4,0.62,0.5)],
+  under:()=>D.ring(ell(-0.44,-0.66,0.11,0.3,-0.15))+D.ring(ell(-0.1,-0.66,0.11,0.3,0.15))+D.ring(ell(-0.44,-0.66,0.05,0.2,-0.15))+D.ring(ell(-0.1,-0.66,0.05,0.2,0.15))+D.ring(ell(0.55,0.9,0.1,0.06))+D.ring(ell(-0.18,0.86,0.1,0.06))+D.circle(-0.26,-0.22,0.3)+D.face(-0.26,-0.22,0.3)+D.whiskers(-0.26,-0.25,0.28),
+  over:()=>D.carrot(0.82,-0.5,0.42)+D.carrot(-0.84,0.62,0.34)+D.sparkle(0.92,0.9,0.05)+D.sparkle(0.35,-0.92,0.05)+D.circle(0.88,0.18,0.04)},
+ {id:'turtle',name:'烏龜',maze:()=>[ell(0,0,0.64,0.5)],
+  under:()=>D.circle(0.8,-0.08,0.17)+D.dot(0.86,-0.14,0.03)+D.ring(ell(-0.55,-0.42,0.18,0.12,-0.7))+D.ring(ell(0.52,-0.44,0.18,0.12,0.7))+D.ring(ell(-0.55,0.42,0.18,0.12,0.7))+D.ring(ell(0.52,0.44,0.18,0.12,-0.7))+D.poly(rounded([[-0.6,0.0],[-0.88,0.12],[-0.62,0.2]],0.3,4)),
+  over:()=>D.grass(-1,-0.42,0.98)+D.grass(0.45,1,0.98)+D.sun(-0.85,-0.82,0.08)},
+ {id:'house',name:'房子',maze:()=>[rounded([[-0.62,-0.02],[0.62,-0.02],[0.62,0.82],[-0.62,0.82]],0.12,6),rounded([[-0.86,0.02],[0,-0.78],[0.86,0.02]],0.15,6)],
+  under:()=>D.poly([[0.4,-0.6],[0.54,-0.6],[0.54,-0.2],[0.4,-0.2]])+D.circle(0.52,-0.74,0.06)+D.circle(0.62,-0.86,0.08)+D.circle(0.76,-0.96,0.05),
+  over:()=>D.sun(-0.85,-0.82,0.08)+D.grass(-1,1,0.9)+D.circle(0.92,0.6,0.08)+D.line(0.92,0.68,0.92,0.9)},
+ {id:'tree',name:'松樹',maze:()=>[rounded([[0,-0.84],[0.52,-0.26],[-0.52,-0.26]],0.2,6),rounded([[0,-0.52],[0.74,0.18],[-0.74,0.18]],0.2,6),rounded([[0,-0.14],[0.94,0.62],[-0.94,0.62]],0.2,6)],
+  under:()=>D.poly([[-0.14,0.55],[0.14,0.55],[0.14,0.9],[-0.14,0.9]]),
+  over:()=>D.smallStar(-0.82,-0.84,0.12)+D.smallStar(0.84,-0.78,0.09)+D.grass(-1,1,0.9)+D.sparkle(-0.6,-0.95,0.05)+D.sparkle(0.6,-0.95,0.05)+D.circle(-0.88,-0.4,0.03)+D.circle(0.9,-0.35,0.03)+D.circle(-0.8,0.6,0.05)+D.circle(0.82,0.62,0.05)},
+ {id:'ladybug',name:'瓢蟲',maze:()=>[circ(0.1,0.05,0.64)],
+  under:()=>D.circle(-0.6,0.05,0.26)+D.dot(-0.68,-0.05,0.04)+D.dot(-0.68,0.15,0.04)+`<path d="M-0.78 -0.12Q-0.95 -0.3 -0.9 -0.45" fill="none" class="dk"/><path d="M-0.8 -0.02Q-1.0 -0.1 -1.0 -0.28" fill="none" class="dk"/>`+D.dot(-0.9,-0.47,0.03)+D.dot(-1.0,-0.3,0.03)+D.line(-0.3,-0.5,-0.55,-0.8)+D.line(0.38,-0.55,0.5,-0.85)+D.line(0.65,-0.3,0.95,-0.5)+D.line(-0.3,0.6,-0.55,0.9)+D.line(0.38,0.65,0.5,0.95)+D.line(0.65,0.4,0.95,0.6),
+  over:()=>D.circle(-0.9,0.85,0.05)+D.circle(0.9,-0.88,0.05)+D.leaf(0.82,0.86,0.13,0.06,0.5)},
+ {id:'bear',name:'小熊',maze:()=>[ell(0.1,0.42,0.62,0.52)],
+  under:()=>D.circle(-0.62,-0.6,0.14)+D.circle(-0.1,-0.6,0.14)+D.circle(-0.36,-0.3,0.35)+D.dot(-0.48,-0.38,0.035)+D.dot(-0.24,-0.38,0.035)+D.circle(-0.36,-0.2,0.1)+D.dot(-0.36,-0.23,0.035)+`<path d="M-0.42 -0.14Q-0.36 -0.08 -0.3 -0.14" fill="none" class="dk"/>`+D.ring(ell(-0.2,0.96,0.13,0.07))+D.ring(ell(0.4,0.96,0.13,0.07)),
+  over:()=>D.ring(rounded([[0.72,-0.5],[0.98,-0.5],[0.96,-0.1],[0.74,-0.1]],0.3,5))+D.line(0.72,-0.4,0.98,-0.4)+D.circle(0.9,0.3,0.04)+D.sparkle(0.6,-0.88,0.05)+D.sparkle(-0.92,0.3,0.05)},
+ {id:'whale',name:'鯨魚',maze:()=>[ell(-0.12,0.18,0.7,0.42)],
+  under:()=>D.ring(ell(0.78,-0.22,0.22,0.1,-0.9))+D.ring(ell(0.84,0.0,0.22,0.1,0.6))+D.ring(ell(0.62,0.05,0.14,0.08,0.3))+D.ring(ell(-0.25,0.62,0.22,0.1,0.5)),
+  over:()=>`<path d="M-0.5 -0.3Q-0.5 -0.6 -0.68 -0.78" fill="none" class="dk"/><path d="M-0.5 -0.3Q-0.5 -0.6 -0.32 -0.78" fill="none" class="dk"/>`+D.circle(-0.72,-0.86,0.05)+D.circle(-0.28,-0.86,0.05)+D.circle(0.3,-0.75,0.06)+D.circle(0.42,-0.9,0.04)+`<path d="M-1 0.92Q-0.85 0.8 -0.7 0.92T-0.4 0.92T-0.1 0.92T0.2 0.92T0.5 0.92T0.8 0.92T1 0.92" fill="none" class="dk"/>`},
+ {id:'balloon',name:'氣球',maze:()=>[ell(0,-0.24,0.6,0.66)],
+  under:()=>D.poly([[-0.09,0.64],[0.09,0.64],[0,0.74]])+`<path d="M0 0.74Q0.22 0.84 0.02 0.94Q-0.15 1.02 0.08 1.06" fill="none" class="dk"/>`,
+  over:()=>D.ring(ell(-0.86,0.55,0.12,0.15))+D.line(-0.86,0.7,-0.8,0.95)+D.ring(ell(0.88,0.6,0.1,0.13))+D.line(0.88,0.73,0.82,0.95)+D.sparkle(-0.85,-0.75,0.05)+D.sparkle(0.85,-0.8,0.05)+D.circle(-0.9,-0.3,0.04)+D.circle(0.9,-0.2,0.04)},
+ {id:'lantern',name:'燈籠',maze:()=>[ell(0,0,0.62,0.5)],
+  under:()=>D.ring(rounded([[-0.3,-0.88],[0.3,-0.88],[0.3,-0.72],[-0.3,-0.72]],0.3,4))+D.ring(rounded([[-0.3,0.7],[0.3,0.7],[0.3,0.86],[-0.3,0.86]],0.3,4))+D.line(0,-0.88,0,-1.05)+D.line(-0.12,0.86,-0.14,1.05)+D.line(0,0.86,0,1.06)+D.line(0.12,0.86,0.14,1.05),
+  over:()=>D.sparkle(-0.85,-0.8,0.05)+D.sparkle(0.85,-0.75,0.05)+D.circle(-0.9,-0.4,0.04)+D.circle(0.9,-0.3,0.04)+D.sparkle(-0.88,0.6,0.04)+D.sparkle(0.88,0.65,0.04)+D.circle(-0.8,0.9,0.03)+D.circle(0.82,0.9,0.03)},
+];
+for(const s of SHAPES){if(s.maze){s.rings=s.maze();s.d=ringsPath(s.rings);s.p2=new Path2D(s.d);}}
+const _ctx=document.createElement('canvas').getContext('2d');
+const insideShape=(s,x,y)=>_ctx.isPointInPath(s.p2,x,y,'nonzero');
+
+/* ---------- 格子迷宮（造型遮罩） ---------- */
+function buildGridMaze(shape,n,rng){
+  const inside=[];
+  for(let r=0;r<n;r++){inside[r]=[];for(let c=0;c<n;c++){const u=((c+0.5)/n)*2-1,v=((r+0.5)/n)*2-1;inside[r][c]=insideShape(shape,u,v);}}
+  const comp=Array.from({length:n},()=>Array(n).fill(-1));let best=-1,bestSize=0,id=0;
+  const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){if(!inside[r][c]||comp[r][c]>=0)continue;const st=[[r,c]];comp[r][c]=id;let sz=0;
+    while(st.length){const [a,b]=st.pop();sz++;for(const [dr,dc] of dirs){const rr=a+dr,cc=b+dc;if(rr<0||cc<0||rr>=n||cc>=n||!inside[rr][cc]||comp[rr][cc]>=0)continue;comp[rr][cc]=id;st.push([rr,cc]);}}
+    if(sz>bestSize){bestSize=sz;best=id;}id++;}
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)inside[r][c]=comp[r][c]===best;
+  const wall=Array.from({length:n},()=>Array.from({length:n},()=>({t:true,r:true,b:true,l:true})));
+  const vis=Array.from({length:n},()=>Array(n).fill(false));
+  const cells=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(inside[r][c])cells.push([r,c]);
+  const start0=cells[Math.floor(rng()*cells.length)];
+  const stack=[start0];vis[start0[0]][start0[1]]=true;
+  while(stack.length){const [r,c]=stack[stack.length-1];
+    const nb=[];for(const [dr,dc] of dirs){const rr=r+dr,cc=c+dc;if(rr<0||cc<0||rr>=n||cc>=n||!inside[rr][cc]||vis[rr][cc])continue;nb.push([rr,cc,dr,dc]);}
+    if(!nb.length){stack.pop();continue;}
+    const [rr,cc,dr,dc]=nb[Math.floor(rng()*nb.length)];
+    if(dr===1){wall[r][c].b=false;wall[rr][cc].t=false;}else if(dr===-1){wall[r][c].t=false;wall[rr][cc].b=false;}
+    else if(dc===1){wall[r][c].r=false;wall[rr][cc].l=false;}else{wall[r][c].l=false;wall[rr][cc].r=false;}
+    vis[rr][cc]=true;stack.push([rr,cc]);}
+  const isIn=(r,c)=>r>=0&&c>=0&&r<n&&c<n&&inside[r][c];
+  let top=cells.filter(([r,c])=>!isIn(r-1,c));const minR=Math.min(...top.map(p=>p[0]));top=top.filter(p=>p[0]===minR);
+  top.sort((a,b)=>Math.abs(a[1]-n/2)-Math.abs(b[1]-n/2));const start=top[0];
+  let bot=cells.filter(([r,c])=>!isIn(r+1,c));const maxR=Math.max(...bot.map(p=>p[0]));bot=bot.filter(p=>p[0]===maxR);
+  bot.sort((a,b)=>Math.abs(a[1]-n/2)-Math.abs(b[1]-n/2));const end=bot[0];
+  wall[start[0]][start[1]].t=false;wall[end[0]][end[1]].b=false;
+  const prev=new Map();const q=[start];const key=p=>p[0]*n+p[1];prev.set(key(start),null);
+  while(q.length){const [r,c]=q.shift();if(r===end[0]&&c===end[1])break;const w=wall[r][c];
+    const opts=[];if(!w.t)opts.push([r-1,c]);if(!w.b)opts.push([r+1,c]);if(!w.l)opts.push([r,c-1]);if(!w.r)opts.push([r,c+1]);
+    for(const p of opts){if(!isIn(p[0],p[1])||prev.has(key(p)))continue;prev.set(key(p),[r,c]);q.push(p);}}
+  const path=[];let cur=end;while(cur){path.push(cur);cur=prev.get(key(cur));}path.reverse();
+  return {type:'grid',shape,n,inside,wall,start,end,path};
+}
+
+/* ---------- 同心圓迷宮 ---------- */
+function buildThetaMaze(shape,rings,rng){
+  const counts=[1,6];
+  for(let i=2;i<rings;i++){const prev=counts[i-1];const circum=2*Math.PI*i;counts.push(circum/prev>2.0?prev*2:prev);}
+  const cw=counts.map(k=>Array(k).fill(true));
+  const inw=counts.map(k=>Array(k).fill(true));
+  const vis=counts.map(k=>Array(k).fill(false));
+  const parent=(i,j)=>Math.floor(j*counts[i-1]/counts[i]);
+  const children=(i,j)=>{if(i+1>=rings)return[];const ratio=counts[i+1]/counts[i];const out=[];for(let k=0;k<ratio;k++)out.push([i+1,j*ratio+k]);return out;};
+  const neighbors=(i,j)=>{const nb=[];const k=counts[i];
+    if(i>0){nb.push({i,j:(j+1)%k,how:'cw'});nb.push({i,j:(j-1+k)%k,how:'ccw'});nb.push({i:i-1,j:parent(i,j),how:'in'});}
+    for(const [ci,cj] of children(i,j))nb.push({i:ci,j:cj,how:'out'});return nb;};
+  const link=(a,b,how)=>{if(how==='cw')cw[a.i][a.j]=false;else if(how==='ccw')cw[b.i][b.j]=false;else if(how==='in')inw[a.i][a.j]=false;else inw[b.i][b.j]=false;};
+  const stack=[{i:0,j:0}];vis[0][0]=true;
+  while(stack.length){const cur=stack[stack.length-1];const nb=neighbors(cur.i,cur.j).filter(x=>!vis[x.i][x.j]);
+    if(!nb.length){stack.pop();continue;}const nx=nb[Math.floor(rng()*nb.length)];link(cur,nx,nx.how);vis[nx.i][nx.j]=true;stack.push(nx);}
+  const prev=new Map();const key=c=>c.i+'_'+c.j;const q=[{i:0,j:0}];prev.set('0_0',null);const dist=new Map([['0_0',0]]);
+  while(q.length){const c=q.shift();for(const nb of neighbors(c.i,c.j)){
+    let open=false;if(nb.how==='cw')open=!cw[c.i][c.j];else if(nb.how==='ccw')open=!cw[nb.i][nb.j];else if(nb.how==='in')open=!inw[c.i][c.j];else open=!inw[nb.i][nb.j];
+    if(!open||prev.has(key(nb)))continue;prev.set(key(nb),c);dist.set(key(nb),dist.get(key(c))+1);q.push(nb);}}
+  let end={i:rings-1,j:0},bd=-1;for(let j=0;j<counts[rings-1];j++){const d=dist.get((rings-1)+'_'+j);if(d>bd){bd=d;end={i:rings-1,j};}}
+  const path=[];let c=end;while(c){path.push(c);c=prev.get(key(c));}path.reverse();
+  return {type:'theta',shape,rings,counts,cw,inw,end,path};
+}
+
+/* ---------- 繪製迷宮（回傳頁面座標的 SVG 片段） ---------- */
+const DIFF={1:{cell:9,rings:6},2:{cell:6.8,rings:9},3:{cell:5.2,rings:12},4:{cell:4.2,rings:16}};
+function jit(x,y,seed,amt){if(!amt)return[x,y];return[x+(hash2(x,y,seed)-0.5)*amt,y+(hash2(y,x,seed+3)-0.5)*amt];}
+
+function renderArt(maze,opt,isSolution){
+  const {size,ox,oy,stroke,color,style,decor,seed,showLabel}=opt;
+  const S=size/2,cx=ox+S,cy=oy+S;      // 單位座標 → 頁面座標：x=cx+u*S
+  const amt=style==='hand'?0.9:0;
+  const cap=style==='clean'?'square':'round';
+  const sw=stroke,bw=stroke*2.2,dw=Math.max(0.45,stroke*1.1);
+  const uid='m'+Math.floor(Math.random()*1e9);
+  const sh=maze.shape;
+  const tr=`transform="translate(${F(cx)},${F(cy)}) scale(${F(S)})"`;
+  const decoStyle=`<style>.${uid} .dk{stroke:${color};stroke-width:${F(dw/S)};stroke-linecap:round;stroke-linejoin:round}.${uid} .dkfill{fill:${color}}</style>`;
+  let out=`<g class="${uid}">${decoStyle}`;
+  if(decor&&sh.under)out+=`<g ${tr}>${sh.under()}</g>`;
+  let walls='',border='',solD='',labels='';
+  const seg=(x1,y1,x2,y2,isB)=>{const [a,b]=jit(x1,y1,seed,amt),[c,d]=jit(x2,y2,seed,amt);const s=`M${F(a)} ${F(b)}L${F(c)} ${F(d)}`;if(isB)border+=s;else walls+=s;};
+
+  if(maze.type==='grid'){
+    const n=maze.n,cs=size/n;const isIn=(r,c)=>r>=0&&c>=0&&r<n&&c<n&&maze.inside[r][c];
+    let rects='';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++){if(!maze.inside[r][c])continue;const w=maze.wall[r][c];const x=ox+c*cs,y=oy+r*cs;
+      rects+=`<rect x="${F(x-0.05)}" y="${F(y-0.05)}" width="${F(cs+0.1)}" height="${F(cs+0.1)}"/>`;
+      if(w.t)seg(x,y,x+cs,y,!isIn(r-1,c));
+      if(w.l)seg(x,y,x,y+cs,!isIn(r,c-1));
+      if(w.r&&!isIn(r,c+1))seg(x+cs,y,x+cs,y+cs,true);
+      if(w.b&&!isIn(r+1,c))seg(x,y+cs,x+cs,y+cs,true);}
+    const s=maze.start,e=maze.end;
+    const ex=ox+(s[1]+0.5)*cs,ey=oy+s[0]*cs,xx=ox+(e[1]+0.5)*cs,xy=oy+(e[0]+1)*cs;
+    // 入口／出口要穿過平滑外框：往外找到輪廓外為止
+    const outDist=(px,py,dir)=>{let d=0;while(d<cs*3&&insideShape(sh,(px-cx)/S,(py+dir*d-cy)/S))d+=0.3;return d+bw*0.6+0.4;};
+    const eLen=outDist(ex,ey,-1),xLen=outDist(xx,xy,1);
+    // 平滑外框填色 + 格子白底（夾在中間就是外框帶）
+    out+=`<path d="${sh.d}" ${tr} fill="${color}" stroke="${color}" stroke-width="${F(bw/S)}" stroke-linejoin="round"/>`;
+    out+=`<clipPath id="${uid}c"><path d="${sh.d}" ${tr}/></clipPath><g clip-path="url(#${uid}c)" fill="#fff">${rects}</g>`;
+    out+=`<rect x="${F(ex-cs/2+0.02)}" y="${F(ey-eLen)}" width="${F(cs-0.04)}" height="${F(eLen+0.3)}" fill="#fff"/><rect x="${F(xx-cs/2+0.02)}" y="${F(xy-0.3)}" width="${F(cs-0.04)}" height="${F(xLen+0.3)}" fill="#fff"/>`;
+    const pts=maze.path.map(([r,c])=>[ox+(c+0.5)*cs,oy+(r+0.5)*cs]);
+    pts.unshift([ex,ey-eLen+0.5]);pts.push([xx,xy+xLen-0.5]);
+    solD='M'+pts.map(p=>F(p[0])+' '+F(p[1])).join('L');
+    if(showLabel){const f=`font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif" font-weight="700" fill="#E8552D"`;
+      labels+=`<text x="${F(ex)}" y="${F(ey-eLen-4.5)}" text-anchor="middle" font-size="5.5" ${f}>入口</text><polygon points="-2.2,-2 2.2,-2 0,1.8" transform="translate(${F(ex)},${F(ey-eLen-2.6)})" fill="#E8552D"/>`;
+      labels+=`<text x="${F(xx)}" y="${F(xy+xLen+8.5)}" text-anchor="middle" font-size="5.5" ${f}>出口</text><polygon points="-2.2,-2 2.2,-2 0,1.8" transform="translate(${F(xx)},${F(xy+xLen+2.6)})" fill="#E8552D"/>`;}
+  }else{
+    const R=sh.r*S,mx=cx+sh.cx*S,my=cy+sh.cy*S;const rings=maze.rings;const rw=R/(rings+0.6);const r0=rw*1.6;
+    const rad=i=>i===0?0:r0+(i-1)*rw;
+    const arc=(r,t1,t2,isB)=>{const x1=mx+r*Math.cos(t1),y1=my+r*Math.sin(t1),x2=mx+r*Math.cos(t2),y2=my+r*Math.sin(t2);const big=(t2-t1)>Math.PI?1:0;const s=`M${F(x1)} ${F(y1)}A${F(r)} ${F(r)} 0 ${big} 1 ${F(x2)} ${F(y2)}`;if(isB)border+=s;else walls+=s;};
+    out+=`<circle cx="${F(mx)}" cy="${F(my)}" r="${F(rad(rings))}" fill="#fff"/>`;
+    for(let i=1;i<rings;i++){const k=maze.counts[i];const ri=rad(i),ro=rad(i+1);
+      for(let j=0;j<k;j++){const t1=j/k*2*Math.PI,t2=(j+1)/k*2*Math.PI;
+        if(maze.inw[i][j])arc(ri,t1,t2,false);
+        if(maze.cw[i][j]){walls+=`M${F(mx+ri*Math.cos(t2))} ${F(my+ri*Math.sin(t2))}L${F(mx+ro*Math.cos(t2))} ${F(my+ro*Math.sin(t2))}`;}
+        if(i===rings-1&&j!==maze.end.j)arc(ro,t1,t2,true);}}
+    const center=c=>{if(c.i===0)return[mx,my];const k=maze.counts[c.i];const t=(c.j+0.5)/k*2*Math.PI;const r=(rad(c.i)+rad(c.i+1))/2;return[mx+r*Math.cos(t),my+r*Math.sin(t)];};
+    const e=maze.end;const te=(e.j+0.5)/maze.counts[e.i]*2*Math.PI;const Ro=rad(rings);
+    const P=maze.path;
+    for(let q=0;q<P.length;q++){const c=P[q];const [x,y]=center(c);
+      if(q===0){solD+=`M${F(x)} ${F(y)}`;continue;}const pv=P[q-1];
+      if(pv.i===c.i&&c.i>0){const k=maze.counts[c.i];const r=(rad(c.i)+rad(c.i+1))/2;const dj=((c.j-pv.j)%k+k)%k;solD+=`A${F(r)} ${F(r)} 0 0 ${dj===1?1:0} ${F(x)} ${F(y)}`;}
+      else solD+=`L${F(x)} ${F(y)}`;}
+    solD+=`L${F(mx+(Ro+rw*0.6)*Math.cos(te))} ${F(my+(Ro+rw*0.6)*Math.sin(te))}`;
+    if(showLabel){const f=`font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif" font-weight="700"`;
+      labels+=`<circle cx="${F(mx)}" cy="${F(my)}" r="3.2" fill="#E8552D"/><text x="${F(mx)}" y="${F(my+1.6)}" text-anchor="middle" font-size="3.6" fill="#fff" ${f}>入</text>`;
+      const lx=mx+(Ro+9)*Math.cos(te),ly=my+(Ro+9)*Math.sin(te);
+      labels+=`<rect x="${F(lx-7)}" y="${F(ly-3.2)}" width="14" height="6.4" rx="2" fill="#fff"/><text x="${F(lx)}" y="${F(ly+2)}" text-anchor="middle" font-size="5.5" fill="#E8552D" ${f}>出口</text>`;
+      const ax=mx+(Ro+2.8)*Math.cos(te),ay=my+(Ro+2.8)*Math.sin(te);
+      labels+=`<polygon points="-2,-2.2 1.8,0 -2,2.2" transform="translate(${F(ax)},${F(ay)}) rotate(${F(te*180/Math.PI)})" fill="#E8552D"/>`;}
+  }
+  if(style==='double'){out+=`<path d="${walls}${border}" fill="none" stroke="${color}" stroke-width="${F(sw*2.6)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${walls}${border}" fill="none" stroke="#fff" stroke-width="${F(sw*1.2)}" stroke-linecap="round" stroke-linejoin="round"/>`;}
+  else{out+=`<path d="${walls}" fill="none" stroke="${color}" stroke-width="${F(sw)}" stroke-linecap="${cap}" stroke-linejoin="round"/><path d="${border}" fill="none" stroke="${color}" stroke-width="${F(maze.type==='theta'?bw:sw)}" stroke-linecap="round" stroke-linejoin="round"/>`;}
+  if(decor&&sh.over)out+=`<g ${tr}>${sh.over()}</g>`;
+  if(isSolution)out+=`<path d="${solD}" fill="none" stroke="#E8552D" stroke-width="${F(Math.max(1.2,sw*0.9))}" stroke-dasharray="2.4 1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>`;
+  out+=labels+'</g>';
+  return out;
+}
+
+/* ---------- 頁面 ---------- */
+const FONT=`font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif"`;
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function layout(cfg){const W=210,H=297;const size=cfg.size;const ox=(W-size)/2;const headerH=cfg.nameLine?42:34;const oy=headerH+(H-headerH-24-size)/2;return{W,H,size,ox,oy};}
+function pageSvg(maze,cfg,isSolution,idx,total){
+  const {W,size,ox,oy}=layout(cfg);
+  const art=renderArt(maze,{size,ox,oy,stroke:cfg.stroke,color:cfg.color,style:cfg.style,decor:cfg.decor,seed:cfg.seed,showLabel:cfg.showLabel},isSolution);
+  let bg='';
+  if(cfg.bgdots){bg+='<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r=".55" fill="#F4A93C" opacity=".35"/></pattern><rect x="8" y="8" width="194" height="281" rx="6" fill="url(#dots)"/>';}
+  let head=`<text x="${W/2}" y="20" text-anchor="middle" font-size="10" font-weight="700" fill="#12343B" ${FONT}>${esc(cfg.title)}${isSolution?'　解答':''}</text>`;
+  head+=`<text x="${W/2}" y="27.5" text-anchor="middle" font-size="4.2" fill="#7A7068" ${FONT}>${esc(isSolution?'橘色虛線為正確路線':cfg.subtitle)}</text>`;
+  if(cfg.nameLine&&!isSolution){head+=`<text x="22" y="37" font-size="4.2" fill="#12343B" ${FONT}>姓名：</text><line x1="33" y1="38" x2="95" y2="38" stroke="#B9B0A3" stroke-width=".4"/><text x="118" y="37" font-size="4.2" fill="#12343B" ${FONT}>日期：</text><line x1="129" y1="38" x2="188" y2="38" stroke="#B9B0A3" stroke-width=".4"/>`;}
+  const foot=`<text x="${W/2}" y="289" text-anchor="middle" font-size="3.4" fill="#9A918A" ${FONT}>${esc(cfg.footer)}${total>1?`　·　第 ${idx} 張 / 共 ${total} 張`:''}</text><line x1="22" y1="283" x2="188" y2="283" stroke="#EFE6D8" stroke-width=".4"/>`;
+  const corner=`<path d="M12 22 V12 H22 M188 12 H198 V22 M198 275 V285 H188 M22 285 H12 V275" fill="none" stroke="#F4A93C" stroke-width=".8" stroke-linecap="round"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" width="210mm" height="297mm"><rect width="210" height="297" fill="#fff"/>${bg}${corner}${head}${art}${foot}</svg>`;
+}
+/* 只含迷宮圖的 SVG（給 PPT 用） */
+function artOnlySvg(maze,cfg,isSolution){
+  const {size,ox,oy}=layout(cfg);const m=16;
+  const art=renderArt(maze,{size,ox,oy,stroke:cfg.stroke,color:cfg.color,style:cfg.style,decor:cfg.decor,seed:cfg.seed,showLabel:cfg.showLabel},isSolution);
+  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${F(ox-m)} ${F(oy-m)} ${F(size+2*m)} ${F(size+2*m)}" width="${F(size+2*m)}mm" height="${F(size+2*m)}mm"><rect x="${F(ox-m)}" y="${F(oy-m)}" width="${F(size+2*m)}" height="${F(size+2*m)}" fill="#fff"/>${art}</svg>`,x:ox-m,y:oy-m,w:size+2*m};
+}
+
+/* ---------- 狀態與 UI ---------- */
+const state={shape:'butterfly',diff:2,style:'clean',seed:Date.now()%100000};
+const pagesData=[]; // {svg,sol,maze,idx,total}
+
+function initShapes(){const g=$('shapeGrid');g.innerHTML='';for(const s of SHAPES){const b=document.createElement('button');b.className='shape-btn'+(s.id===state.shape?' active':'');b.dataset.id=s.id;b.innerHTML=thumb(s)+`<span>${s.name}</span>`;b.onclick=()=>{state.shape=s.id;document.querySelectorAll('.shape-btn').forEach(x=>x.classList.toggle('active',x.dataset.id===s.id));regen();};g.appendChild(b);}}
+function thumb(s){const body=s.type==='theta'?`<circle cx="${s.cx}" cy="${s.cy}" r="${s.r}" fill="#12343B"/><circle cx="${s.cx}" cy="${s.cy}" r="${s.r*0.6}" fill="#fff"/><circle cx="${s.cx}" cy="${s.cy}" r="${s.r*0.25}" fill="#12343B"/>`:`<path d="${s.d}" fill="#12343B"/>`;
+  return`<svg viewBox="-1.1 -1.1 2.2 2.2"><style>.dk{stroke:#12343B;stroke-width:.05;stroke-linecap:round}.dkfill{fill:#12343B}</style>${s.under?s.under():''}${body}${s.over?s.over():''}</svg>`;}
+
+function cfg(){return{size:+$('size').value,stroke:[0,.35,.55,.8,1.1,1.5][+$('stroke').value],color:$('color').value,style:state.style,decor:$('decor').checked,bgdots:$('bgdots').checked,title:$('title').value||'藝術迷宮',subtitle:$('subtitle').value,nameLine:$('nameLine').checked,showLabel:$('showLabel').checked,footer:$('footer').value,count:Math.min(20,Math.max(1,+$('count').value||1)),mix:$('mixShapes').checked,solMode:$('solMode').value,seed:state.seed};}
+
+function makeMaze(shapeId,c,seed){const shape=SHAPES.find(s=>s.id===shapeId);const rng=mulberry32(seed);const d=DIFF[state.diff];
+  if(shape.type==='theta')return buildThetaMaze(shape,d.rings,rng);
+  const n=Math.round(c.size/d.cell);return buildGridMaze(shape,n,rng);}
+
+function regen(newSeed){
+  if(newSeed)state.seed=Math.floor(Math.random()*1e9);
+  const c=cfg();pagesData.length=0;const sols=[];
+  for(let i=0;i<c.count;i++){
+    let sid=state.shape;if(c.mix){sid=SHAPES[(SHAPES.findIndex(s=>s.id===state.shape)+i)%SHAPES.length].id;}
+    const maze=makeMaze(sid,c,c.seed+i*7919);
+    pagesData.push({svg:pageSvg(maze,c,false,i+1,c.count),sol:false,maze,idx:i+1});
+    if(c.solMode!=='none'){const s={svg:pageSvg(maze,c,true,i+1,c.count),sol:true,maze,idx:i+1};if(c.solMode==='after')pagesData.push(s);else sols.push(s);}
+  }
+  pagesData.push(...sols);
+  const box=$('pages');box.innerHTML='';
+  pagesData.forEach((p,i)=>{const w=document.createElement('div');w.className='pagewrap';w.innerHTML=`<span class="tag${p.sol?' sol':''}">${p.sol?'解答':'題目'} ${p.idx}</span><div class="page">${p.svg}</div>`;box.appendChild(w);});
+  $('pageInfo').textContent=`共 ${pagesData.length} 頁`;
+  applyZoom();
+}
+function applyZoom(){const z=+$('zoom').value/100;$('zoomVal').textContent=Math.round(z*100)+'%';
+  document.querySelectorAll('.pagewrap').forEach(w=>{const p=w.querySelector('.page');p.style.transform=`scale(${z})`;w.style.width=(210*z*3.7795)+'px';w.style.height=(297*z*3.7795)+'px';});}
+
+/* ---------- 輸出 ---------- */
+const shapeName=()=>SHAPES.find(s=>s.id===state.shape).name;
+function downloadSVG(){const p=pagesData[0];if(!p)return;const blob=new Blob([p.svg],{type:'image/svg+xml'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`藝術迷宮_${shapeName()}.svg`;a.click();toast('已下載第 1 張 SVG（可用 Canva、Illustrator 編輯）');}
+function svgToCanvas(svg,wmm,hmm,scale){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));img.onload=()=>{const cv=document.createElement('canvas');cv.width=Math.round(wmm*scale);cv.height=Math.round(hmm*scale);const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(url);res(cv);};img.onerror=rej;img.src=url;});}
+async function downloadPDF(){const btn=$('pdfBtn');btn.disabled=true;btn.textContent='產生中…';
+  try{const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',compress:true});
+    for(let i=0;i<pagesData.length;i++){if(i)pdf.addPage();const cv=await svgToCanvas(pagesData[i].svg,210,297,8);pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);}
+    pdf.save(`藝術迷宮_${shapeName()}_${pagesData.length}頁.pdf`);toast('PDF 已下載');}
+  catch(e){console.error(e);toast('PDF 產生失敗，請改用「列印」→ 另存為 PDF');}
+  btn.disabled=false;btn.textContent='下載 PDF';}
+
+async function downloadPPT(){const btn=$('pptBtn');btn.disabled=true;btn.textContent='產生中…';
+  try{
+    const c=cfg();const pptx=new PptxGenJS();pptx.defineLayout({name:'A4P',width:8.27,height:11.69});pptx.layout='A4P';
+    const IN=1/25.4;const font='Microsoft JhengHei';
+    const total=c.count;
+    for(const p of pagesData){
+      const s=pptx.addSlide();
+      const {x,y,w,svg}=artOnlySvg(p.maze,c,p.sol);
+      const cv=await svgToCanvas(svg,w,w,10);
+      s.addText((p.sol?c.title+'　解答':c.title),{x:0.6,y:0.35,w:7.07,h:0.6,align:'center',fontFace:font,fontSize:28,bold:true,color:'12343B'});
+      s.addText(p.sol?'橘色虛線為正確路線':c.subtitle,{x:0.6,y:0.95,w:7.07,h:0.35,align:'center',fontFace:font,fontSize:12,color:'7A7068'});
+      if(c.nameLine&&!p.sol){
+        s.addText('姓名：',{x:22*IN,y:1.3,w:0.7,h:0.3,fontFace:font,fontSize:12,color:'12343B'});
+        s.addShape(pptx.ShapeType.line,{x:33*IN,y:1.58,w:62*IN,h:0,line:{color:'B9B0A3',width:0.75}});
+        s.addText('日期：',{x:118*IN,y:1.3,w:0.7,h:0.3,fontFace:font,fontSize:12,color:'12343B'});
+        s.addShape(pptx.ShapeType.line,{x:129*IN,y:1.58,w:59*IN,h:0,line:{color:'B9B0A3',width:0.75}});}
+      s.addImage({data:cv.toDataURL('image/png'),x:x*IN,y:y*IN,w:w*IN,h:w*IN});
+      s.addShape(pptx.ShapeType.line,{x:22*IN,y:283*IN,w:166*IN,h:0,line:{color:'EFE6D8',width:0.75}});
+      s.addText(c.footer+(total>1?`　·　第 ${p.idx} 張 / 共 ${total} 張`:''),{x:0.6,y:284*IN,w:7.07,h:0.3,align:'center',fontFace:font,fontSize:9,color:'9A918A'});
+    }
+    await pptx.writeFile({fileName:`藝術迷宮_${shapeName()}_${pagesData.length}頁.pptx`});toast('PPT 已下載：文字可直接修改，迷宮圖可移動縮放');
+  }catch(e){console.error(e);toast('PPT 產生失敗，請確認網路連線後再試');}
+  btn.disabled=false;btn.textContent='下載 PPT';}
+
+/* ---------- 綁定 ---------- */
+initShapes();
+document.querySelectorAll('#diffSeg button').forEach(b=>b.onclick=()=>{state.diff=+b.dataset.v;document.querySelectorAll('#diffSeg button').forEach(x=>x.classList.toggle('on',x===b));regen();});
+document.querySelectorAll('#styleSeg button').forEach(b=>b.onclick=()=>{state.style=b.dataset.v;document.querySelectorAll('#styleSeg button').forEach(x=>x.classList.toggle('on',x===b));regen();});
+['size','stroke','color','decor','bgdots','title','subtitle','nameLine','showLabel','footer','count','mixShapes','solMode'].forEach(id=>{$(id).addEventListener('input',()=>{$('sizeVal').textContent=$('size').value+' mm';$('strokeVal').textContent=['','極細','細','中','粗','極粗'][+$('stroke').value];regen();});});
+$('zoom').addEventListener('input',applyZoom);
+if(window.innerWidth<900){$('zoom').value=Math.min(60,Math.floor((window.innerWidth-50)/(210*3.7795)*100));}
+regen();
+</script>
+</body>
+</html>
