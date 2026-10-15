@@ -191,6 +191,7 @@ function hash2(x,y,s){let h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 const F=n=>(+n).toFixed(3);
+function tint(hex,a){const n=parseInt(hex.slice(1),16);const r=(n>>16)&255,g=(n>>8)&255,b=n&255;const m=v=>Math.round(255+(v-255)*a).toString(16).padStart(2,'0');return '#'+m(r)+m(g)+m(b);}
 
 /* ---------- 幾何：所有造型皆為「點環」(y 向下，單位 -1..1) ---------- */
 function ensureCW(p){let a=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1];}return a<0?p.slice().reverse():p;}
@@ -236,12 +237,12 @@ const SHAPES=[
  {id:'flower',name:'花朵',maze:()=>{const r=[];for(let i=0;i<6;i++){const t=i/6*Math.PI*2-Math.PI/2;r.push(circ(0.42*Math.cos(t),-0.2+0.42*Math.sin(t),0.31));}r.push(circ(0,-0.2,0.36));return r;},
   under:()=>D.line(0,0.45,0,1.0)+D.leaf(-0.2,0.78,0.22,0.1,-0.5)+D.leaf(0.22,0.9,0.22,0.1,0.5),
   over:()=>D.circle(-0.92,0.85,0.05)+D.circle(0.92,0.9,0.04)+D.sparkle(-0.9,-0.9,0.05)+D.sparkle(0.9,-0.9,0.05)},
- {id:'clover',name:'幸運草',maze:()=>[heart(0,-0.44,0.5,0),heart(0.44,0,0.5,Math.PI/2),heart(0,0.44,0.5,Math.PI),heart(-0.44,0,0.5,-Math.PI/2)],
+ {id:'clover',name:'幸運草',maze:()=>[heart(0,-0.42,0.5,0),heart(0.42,0,0.5,Math.PI/2),heart(0,0.42,0.5,Math.PI),heart(-0.42,0,0.5,-Math.PI/2),circ(0,0,0.3)],
   under:()=>`<path d="M0.08 0.55Q0.1 0.9 0.4 1.0" fill="none" class="dk"/>`,
   over:()=>D.circle(-0.9,0.9,0.05)+D.circle(0.92,-0.88,0.04)+D.sparkle(-0.9,-0.9,0.05)+D.sparkle(0.9,0.88,0.05)},
- {id:'butterfly',name:'蝴蝶',maze:()=>[ell(-0.47,-0.3,0.42,0.47),ell(0.47,-0.3,0.42,0.47),ell(-0.4,0.44,0.35,0.37),ell(0.4,0.44,0.35,0.37),ell(0,0.08,0.16,0.62)],
-  over:()=>D.circle(0,-0.62,0.11)+`<path d="M-0.04 -0.68Q-0.15 -0.92 -0.34 -0.95" fill="none" class="dk"/><path d="M0.04 -0.68Q0.15 -0.92 0.34 -0.95" fill="none" class="dk"/>`+D.dot(-0.36,-0.96,0.03)+D.dot(0.36,-0.96,0.03)+D.flower(-0.88,-0.84,0.09)+D.flower(0.88,-0.84,0.09)+D.flower(-0.9,0.88,0.07)+D.flower(0.9,0.88,0.07)},
- {id:'fish',name:'小魚',maze:()=>[ell(-0.2,0.05,0.6,0.4),rounded([[0.28,0.05],[0.95,-0.45],[0.95,0.55]],0.3,8)],
+ {id:'butterfly',name:'蝴蝶',maze:()=>[ell(-0.47,-0.3,0.42,0.47),ell(0.47,-0.3,0.42,0.47),ell(-0.4,0.44,0.35,0.37),ell(0.4,0.44,0.35,0.37),ell(0,0.12,0.16,0.5)],
+  over:()=>D.circle(0,-0.5,0.11)+`<path d="M-0.04 -0.58Q-0.15 -0.85 -0.34 -0.95" fill="none" class="dk"/><path d="M0.04 -0.58Q0.15 -0.85 0.34 -0.95" fill="none" class="dk"/>`+D.dot(-0.36,-0.96,0.03)+D.dot(0.36,-0.96,0.03)+D.flower(-0.88,-0.84,0.09)+D.flower(0.88,-0.84,0.09)+D.flower(-0.9,0.88,0.07)+D.flower(0.9,0.88,0.07)},
+ {id:'fish',name:'小魚',maze:()=>[ell(-0.25,0.05,0.62,0.44),rounded([[0.2,0.05],[1.0,-0.6],[1.0,0.7]],0.25,8)],
   under:()=>`<path d="M-0.5 -0.3Q-0.3 -0.75 0.02 -0.32" class="dk" fill="#fff"/><path d="M-0.45 0.4Q-0.3 0.75 -0.05 0.42" class="dk" fill="#fff"/>`,
   over:()=>D.circle(-0.9,-0.55,0.07)+D.circle(-0.8,-0.8,0.05)+D.circle(-0.95,-0.3,0.04)+`<path d="M0.75 0.98Q0.8 0.8 0.7 0.65Q0.78 0.5 0.72 0.4" fill="none" class="dk"/><path d="M0.9 0.98Q0.95 0.78 0.85 0.62" fill="none" class="dk"/>`+D.grass(-1,-0.45,0.98)},
  {id:'apple',name:'蘋果',maze:()=>[circ(-0.3,0.14,0.58),circ(0.3,0.14,0.58),rounded([[-0.6,0.05],[0.6,0.05],[0.4,0.74],[-0.4,0.74]],0.3,8)],
@@ -285,9 +286,11 @@ const _ctx=document.createElement('canvas').getContext('2d');
 const insideShape=(s,x,y)=>_ctx.isPointInPath(s.p2,x,y,'nonzero');
 
 /* ---------- 格子迷宮（造型遮罩） ---------- */
-function buildGridMaze(shape,n,rng){
-  const inside=[];
-  for(let r=0;r<n;r++){inside[r]=[];for(let c=0;c<n;c++){const u=((c+0.5)/n)*2-1,v=((r+0.5)/n)*2-1;inside[r][c]=insideShape(shape,u,v);}}
+function buildGridMaze(shape,n,rng,margin=0){
+  const inside=[];const cs=2/n,m=margin;
+  // 格子要「整格」都在造型輪廓內（含外框線的留白），迷宮才不會超出圖案
+  for(let r=0;r<n;r++){inside[r]=[];for(let c=0;c<n;c++){const x0=c*cs-1-m,y0=r*cs-1-m,x1=(c+1)*cs-1+m,y1=(r+1)*cs-1+m;
+    inside[r][c]=insideShape(shape,x0,y0)&&insideShape(shape,x1,y0)&&insideShape(shape,x0,y1)&&insideShape(shape,x1,y1)&&insideShape(shape,(x0+x1)/2,y0)&&insideShape(shape,(x0+x1)/2,y1)&&insideShape(shape,x0,(y0+y1)/2)&&insideShape(shape,x1,(y0+y1)/2);}}
   const comp=Array.from({length:n},()=>Array(n).fill(-1));let best=-1,bestSize=0,id=0;
   const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
   for(let r=0;r<n;r++)for(let c=0;c<n;c++){if(!inside[r][c]||comp[r][c]>=0)continue;const st=[[r,c]];comp[r][c]=id;let sz=0;
@@ -307,10 +310,9 @@ function buildGridMaze(shape,n,rng){
     else if(dc===1){wall[r][c].r=false;wall[rr][cc].l=false;}else{wall[r][c].l=false;wall[rr][cc].r=false;}
     vis[rr][cc]=true;stack.push([rr,cc]);}
   const isIn=(r,c)=>r>=0&&c>=0&&r<n&&c<n&&inside[r][c];
-  let top=cells.filter(([r,c])=>!isIn(r-1,c));const minR=Math.min(...top.map(p=>p[0]));top=top.filter(p=>p[0]===minR);
-  top.sort((a,b)=>Math.abs(a[1]-n/2)-Math.abs(b[1]-n/2));const start=top[0];
-  let bot=cells.filter(([r,c])=>!isIn(r+1,c));const maxR=Math.max(...bot.map(p=>p[0]));bot=bot.filter(p=>p[0]===maxR);
-  bot.sort((a,b)=>Math.abs(a[1]-n/2)-Math.abs(b[1]-n/2));const end=bot[0];
+  // 入口：上緣、盡量靠近中線；出口：下緣、盡量靠近中線（避免跑到尾巴、耳朵等細部）
+  const top=cells.filter(([r,c])=>!isIn(r-1,c));top.sort((a,b)=>(a[0]+0.8*Math.abs(a[1]-(n-1)/2))-(b[0]+0.8*Math.abs(b[1]-(n-1)/2)));const start=top[0];
+  const bot=cells.filter(([r,c])=>!isIn(r+1,c));bot.sort((a,b)=>((n-1-a[0])+0.8*Math.abs(a[1]-(n-1)/2))-((n-1-b[0])+0.8*Math.abs(b[1]-(n-1)/2)));const end=bot[0];
   wall[start[0]][start[1]].t=false;wall[end[0]][end[1]].b=false;
   const prev=new Map();const q=[start];const key=p=>p[0]*n+p[1];prev.set(key(start),null);
   while(q.length){const [r,c]=q.shift();if(r===end[0]&&c===end[1])break;const w=wall[r][c];
@@ -376,13 +378,14 @@ function renderArt(maze,opt,isSolution){
     const s=maze.start,e=maze.end;
     const ex=ox+(s[1]+0.5)*cs,ey=oy+s[0]*cs,xx=ox+(e[1]+0.5)*cs,xy=oy+(e[0]+1)*cs;
     // 入口／出口要穿過平滑外框：往外找到輪廓外為止
-    const outDist=(px,py,dir)=>{let d=0;while(d<cs*3&&insideShape(sh,(px-cx)/S,(py+dir*d-cy)/S))d+=0.3;return d+bw*0.6+0.4;};
+    const outDist=(px,py,dir)=>{let d=0;while(d<cs*3&&insideShape(sh,(px-cx)/S,(py+dir*d-cy)/S))d+=0.3;return d+bw+0.6;};
     const eLen=outDist(ex,ey,-1),xLen=outDist(xx,xy,1);
     // 平滑外框填色 + 格子白底（夾在中間就是外框帶）
     // 外框內、格子外的縫隙：淡色底（不是路，也不會黑成一團）
-    out+=`<path d="${sh.d}" ${tr} fill="${color}" fill-opacity="0.13"/>`;
-    out+=`<clipPath id="${uid}c"><path d="${sh.d}" ${tr}/></clipPath><g clip-path="url(#${uid}c)" fill="#fff">${rects}</g>`;
-    out+=`<path d="${sh.d}" ${tr} fill="none" stroke="${color}" stroke-width="${F(bw/S)}" stroke-linejoin="round"/>`;
+    // 先畫外框線（寬度加倍），再用不透明淡色把內側蓋掉：只留外半邊，重疊的子圖形邊線也不會露出來
+    out+=`<path d="${sh.d}" ${tr} fill="none" stroke="${color}" stroke-width="${F(bw*2/S)}" stroke-linejoin="round"/>`;
+    out+=`<path d="${sh.d}" ${tr} fill="${tint(color,0.1)}"/>`;
+    out+=`<g fill="#fff">${rects}</g>`;
     out+=`<rect x="${F(ex-cs/2+0.02)}" y="${F(ey-eLen)}" width="${F(cs-0.04)}" height="${F(eLen+0.3)}" fill="#fff"/><rect x="${F(xx-cs/2+0.02)}" y="${F(xy-0.3)}" width="${F(cs-0.04)}" height="${F(xLen+0.3)}" fill="#fff"/>`;
     const pts=maze.path.map(([r,c])=>[ox+(c+0.5)*cs,oy+(r+0.5)*cs]);
     pts.unshift([ex,ey-eLen+0.5]);pts.push([xx,xy+xLen-0.5]);
@@ -458,7 +461,7 @@ function cfg(){return{size:+$('size').value,stroke:[0,.35,.55,.8,1.1,1.5][+$('st
 
 function makeMaze(shapeId,c,seed){const shape=SHAPES.find(s=>s.id===shapeId);const rng=mulberry32(seed);const d=DIFF[state.diff];
   if(shape.type==='theta')return buildThetaMaze(shape,d.rings,rng);
-  const n=Math.round(c.size/d.cell);return buildGridMaze(shape,n,rng);}
+  const n=Math.round(c.size/d.cell);const margin=(c.stroke*2.2/2+0.6)/(c.size/2);return buildGridMaze(shape,n,rng,margin);}
 
 function regen(newSeed){
   if(newSeed)state.seed=Math.floor(Math.random()*1e9);
